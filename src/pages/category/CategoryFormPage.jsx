@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import HeaderComponent from "../components/HeaderComponent";
+import HeaderComponent from "../../components/HeaderComponent";
+import { 
+    getCategoryByIdService, 
+    createCategoryService, 
+    updateCategoryService 
+} from "../../services/CategoryService";
 
 function CategoryFormPage() {
     const navigate = useNavigate();
     const { idcategoria } = useParams();
-    const urlApi = 'http://127.0.0.1:8000/categories/';
 
-    const [category, setCategory] = useState({ name: "" });  // Cambié 'nom' por 'name'
+    const [category, setCategory] = useState({ name: "" });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -16,24 +19,23 @@ function CategoryFormPage() {
     useEffect(() => {
         if (idcategoria) {
             setIsLoading(true);
-            axios.get(`${urlApi}${idcategoria}/`)
-                .then((response) => {
-                    setCategory({ name: response.data.name });  // Cambié 'nom' por 'name'
-                    setIsLoading(false);
+            getCategoryByIdService(idcategoria)
+                .then((data) => {
+                    setCategory({ name: data.name });
                 })
-                .catch((error) => {
-                    console.error("Error al cargar la categoría:", error);
+                .catch((err) => {
+                    console.error("Error al cargar la categoría:", err);
                     setError("Error al cargar los datos de la categoría.");
-                    setIsLoading(false);
-                });
+                })
+                .finally(() => setIsLoading(false));
         }
-    }, [idcategoria, urlApi]);
+    }, [idcategoria]);
 
     // Manejar cambios en el campo de la categoría
     const handleChange = (e) => {
         setCategory({
             ...category,
-            name: e.target.value,  // Cambié 'nom' por 'name'
+            name: e.target.value,
         });
     };
 
@@ -41,22 +43,18 @@ function CategoryFormPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const categoryData = {
-            name: category.name,  // Enviar el nombre de la categoría
-        };
+        const categoryData = { name: category.name };
 
         try {
             setIsLoading(true);
             if (idcategoria) {
-                // Si estamos editando, actualizamos la categoría
-                await axios.put(`${urlApi}${idcategoria}/`, categoryData);
+                await updateCategoryService(idcategoria, categoryData);
             } else {
-                // Si estamos añadiendo una nueva categoría
-                await axios.post(urlApi, categoryData);
+                await createCategoryService(categoryData);
             }
             navigate("/categories"); // Redirigir a la página de categorías después de guardar
-        } catch (error) {
-            console.error("Error al guardar la categoría:", error);
+        } catch (err) {
+            console.error("Error al guardar la categoría:", err);
             setError("Error al guardar la categoría.");
         } finally {
             setIsLoading(false);
@@ -65,7 +63,7 @@ function CategoryFormPage() {
 
     // Manejar el cancelado del formulario
     const handleCancel = () => {
-        navigate("/categories");  // Redirigir a la página de categorías sin guardar
+        navigate("/categories");
     };
 
     return (
@@ -85,7 +83,7 @@ function CategoryFormPage() {
                             type="text"
                             className="form-control"
                             id="inputCategoryName"
-                            value={category.name}  // Asegúrate de que 'category.name' esté correctamente enlazado
+                            value={category.name}
                             onChange={handleChange}
                             required
                         />
